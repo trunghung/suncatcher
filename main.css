@@ -1,0 +1,105 @@
+.ui-mobile [data-role=page], .ui-page {
+	padding-bottom: 60px;
+}
+#viewRecords .ui-table-columntoggle-btn {
+	display: none;
+}
+.padded {
+	padding: 2em;
+}
+#login[data-view="login"] .signup,
+#login[data-view="welcome"] .signup
+{
+	display: none;
+	
+}
+
+#viewRecords .ui-content {
+	padding: 0;
+}
+
+.ui-shadow,
+.ui-btn-up-a,
+.ui-btn-hover-a,
+.ui-btn-down-a,
+.ui-body-b,
+.ui-btn-up-b,
+.ui-btn-hover-b,
+.ui-btn-down-b,
+.ui-bar-c,
+.ui-body-c,
+.ui-btn-up-c,
+.ui-btn-hover-c,
+.ui-btn-down-c,
+.ui-bar-c,
+.ui-body-d,
+.ui-btn-up-d,
+.ui-btn-hover-d,
+.ui-btn-down-d,
+.ui-bar-d,
+.ui-body-e,
+.ui-btn-up-e,
+.ui-btn-hover-e,
+.ui-btn-down-e,
+.ui-bar-e,
+.ui-overlay-shadow,
+.ui-shadow,
+.ui-btn-active,
+.ui-body-a,
+.ui-bar-a {
+    text-shadow: none;
+    box-shadow: none;
+    -webkit-box-shadow: none;
+}
+.ui-btn-hover-a {
+    border: 1px solid       #000 ;
+    background:             #444444 ;
+    font-weight: bold;
+    color:                  #fff ;
+    text-shadow: 0  -1px  1px  #000 ;
+    background-image: -webkit-gradient(linear, left top, left bottom, from( #666 ), to( #444 )); 
+    background-image: -webkit-linear-gradient( #666 , #444 ); 
+    background-image:    -moz-linear-gradient( #666 , #444 ); 
+    background-image:     -ms-linear-gradient( #666 , #444 ); 
+    background-image:      -o-linear-gradient( #666 , #444 ); 
+    background-image:         linear-gradient( #666 , #444 );
+}
+.ui-btn-hover-a {
+    border: 1px solid       #222 ;
+    background:             #333333 ;
+    font-weight: bold;
+    color:                  #fff ;
+    text-shadow: 0  -1px  1px  #000 ;
+    background-image: -webkit-gradient(linear, left top, left bottom, from( #555 ), to( #333 )); 
+    background-image: -webkit-linear-gradient( #555 , #333 ); 
+    background-image:    -moz-linear-gradient( #555 , #333 ); 
+    background-image:     -ms-linear-gradient( #555 , #333 ); 
+    background-image:      -o-linear-gradient( #555 , #333 ); 
+    background-image:         linear-gradient( #555 , #333 );
+}
+.ui-btn-hover-a {
+    border: 1px solid       #222 ;
+    background:             #333333 ;
+    font-weight: bold;
+    color:                  #fff ;
+    text-shadow: 0  -1px  1px  #000 ;
+    background-image: -webkit-gradient(linear, left top, left bottom, from( #555 ), to( #333 )); 
+    background-image: -webkit-linear-gradient( #555 , #333 ); 
+    background-image:    -moz-linear-gradient( #555 , #333 ); 
+    background-image:     -ms-linear-gradient( #555 , #333 ); 
+    background-image:      -o-linear-gradient( #555 , #333 ); 
+    background-image:         linear-gradient( #555 , #333 );
+}
+.ui-btn-down-a {
+    border: 1px solid       #222 ;
+    background:             #333333 ;
+    font-weight: bold;
+    color:                  #fff ;
+    text-shadow: 0  -1px  1px  #000 ;
+    background-image: -webkit-gradient(linear, left top, left bottom, from( #555 ), to( #333 )); 
+    background-image: -webkit-linear-gradient( #555 , #333 ); 
+    background-image:    -moz-linear-gradient( #555 , #333 ); 
+    background-image:     -ms-linear-gradient( #555 , #333 ); 
+    background-image:      -o-linear-gradient( #555 , #333 ); 
+    background-image:         linear-gradient( #555 , #333 );
+}
