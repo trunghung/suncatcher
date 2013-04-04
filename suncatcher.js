@@ -1,84 +1,75 @@
-var webdb;
+var webdb = null;
+var server = null;
+var appName = "Sun Catcher";
 var webdbold = WebDBOld("Sun Catcher");
 var inited = false;
 var _lastRecordDate = "";
 
-$(document).ready(onLoad);
-function onLoad() {
-	webdb = WebDB("Record", "Sun Catcher", "record", {success: onSuccess, error: onError});
+$( document ).bind( "mobileinit", function() {
+    // Make your jQuery Mobile framework configuration changes here!
+    $.support.cors = true;
+    $.mobile.allowCrossDomainPages = true;
+});
+$(document).ready(function(){
+	webdb = WebDB("Record", appName, {success: onSuccess, error: onError});
 	location.hash = "";	// Clear all hash history
-	init();
-}
+	server = new Server(appName);
+	server.init(window.location.href.indexOf("debug=1") < 0);
+	bindUI();
+	onLoginPageShow();
+});
+
 function onSuccess(tx, r) {
 	webdb.getAllItems(loadItems);
 }
 function onError(tx, err) {
 	alert(err.message);
 }
-var _lastModDate = 0;
-function syncWithServer() {
-	var user = new StackMob.User({ username: 'hung' });
-	var Record = StackMob.Model.extend({ schemaName: 'record' });
-	var Records = StackMob.Collection.extend({ model: Record });
-	var records = new Records();
-	var q = new StackMob.Collection.Query();
-	q.gt("lastmoddate", _lastModDate);
-	records.query(q, {
-	    success: function(models) {
-		   console.debug(model.toJSON()); //JSON array of matching Todo objects
-	    },
-	    error: function(models, response) {
-		   console.debug(response);
-	    }
-	});
-}
 function bindUI() {
+	$('#time').mobiscroll().date({
+		theme: 'android-ics light',
+		display: 'inline',
+		mode: 'scroller',
+		dateOrder: 'mmD ddyy',
+		rows: 3
+	});
 	$("body").delegate(".logout", "click", function(e){
-		StackMob.getLoggedInUser( {
-			success: function(username){
-				var user = new StackMob.User({ username: username});
-				user.logout({
-					success : function(model) {
-						$.mobile.changePage("#login");
-					},
-					error : function(model, response) {
-						$.mobile.changePage("#login");
-						console.log("Oops there was an error in loging out"); 
-					}
-				});
-			}
-		});
+		logout();
 		var panel = $(e.currentTarget).closest("#menu-panel");
 		if (panel)
 			panel.panel( "close" );
 	});
-	$("#login .loginBtn").click(function(e){
+	
+	$("#login .loginBtn").click(_login);
+	$("#login .signupBtn").click(function(e) {
 		var elLogin = $("#login")[0];
 		if (elLogin.dataset.view == "login") {
-			var username = $("#login .username").val().toLowerCase(),
-			password = $("#login .password").val();
-			var user = new StackMob.User({ username: username, password: password });
-			user.login(true, {
-				success: function(model) {
-					$.mobile.changePage("#home");
-				},
-				error: function(model, response) {
-					alert("wrong username or password");
-				}
-			});
+			elLogin.dataset.view =  "signup";
 		}
 		else {
-			elLogin.dataset.view = "login";
+			var username = $("#login .username").val().toLowerCase(),
+			password = $("#login .password").val(),
+			user = new StackMob.User({ username: username,
+								    password: password,
+								    email: username,
+								    firstname: $("#login .firstname").val(),
+								    lastname: $("#login .lastname").val() });
+			user.create({
+				success: function(model) {
+				    _login();
+				},
+				error: function(model, response) {
+				    alert("Can't create account " + response);
+				}
+			 });
+
 		}
-	});
-	$("#login .registerBtn").click(function(e) {
-		$("#login").attr("data-view", "signup");
 	});
 	
 	$("body").on("click", "#save", function(){
 		var val = parseInt($('#value').val());
 		if (val >= 0) {
-			webdb.addEntry(val, $('#time').mobiscroll('getDate'));
+			server.add(val, $('#time').mobiscroll('getDate'));
 		}
 		$('#value').val("");
 		$("#add").dialog("close");
@@ -106,7 +97,7 @@ function bindUI() {
 	$("#history").on("click", "tr button", function(e){
 		var target = e.target;
 		if (target.dataset.id > 0 && confirm("Delete this entry?")) {
-			webdb.deleteEntry(target.dataset.id);
+			server.destroy(target.dataset.id);
 		}
 	});
 	$("body").delegate(".export", "click", function(e){
@@ -123,14 +114,63 @@ function bindUI() {
 	$("body").delegate(".sync", "click", function(e){
 		syncWithServer();
 	});
+	server.on("syncStart", function() {
+		console.log("Sync starts");
+	});
+	server.on("syncDone", function() {
+		console.log("Sync done");
+	});
 }
 function exportItems(ts, rs) {
 	var i, row, date;
 	for (var i=0; i < rs.rows.length; i++) {
 		row = rs.rows.item(i);
-		save(row.total, row.date);
+		server.add(row.total, row.date);
 	}
 }
+
+function logout() {
+	StackMob.getLoggedInUser( {
+		success: function(username){
+			var user = new StackMob.User({ username: username});
+			user.logout({
+				success : function(model) {
+					$.mobile.changePage("#login");
+				},
+				error : function(model, response) {
+					$.mobile.changePage("#login");
+					console.log("Oops there was an error in loging out"); 
+				}
+			});
+		}
+	});
+}
+function _login() {
+	var elLogin = $("#login")[0];
+	if (elLogin.dataset.view == "login") {
+		var username = $("#login .username").val().toLowerCase(),
+		password = $("#login .password").val();
+		
+		var user = new StackMob.User({ username: username, password: password });
+		user.login(true, {
+			success: function(user) {
+				$.mobile.changePage("#home");
+				server.sync();
+				// Cache user info
+				localStorage.setItem(appName + "-username", username);
+				localStorage.setItem(appName + "-password", password);
+			},
+			error: function(model, response) {
+				alert("wrong username or password");
+			}
+		});
+		
+	}
+	else {
+		elLogin.dataset.view = "login";
+	}
+}
+
 function onLoginPageShow() {
 	var $this = $( this ),
 	    theme = $this.jqmData("theme") || $.mobile.loader.prototype.options.theme,
@@ -143,30 +183,23 @@ function onLoginPageShow() {
 		   html: null
 	});
 	setTimeout(function(){
-		StackMob.isLoggedIn({
-			yes: function(username){
-				$.mobile.changePage("#home");
+		StackMob.getLoggedInUser({
+			success: function(username){
 				$.mobile.loading('hide');
-			},
-			no: function(){
-				$.mobile.loading('hide');
+				if (username) {
+					console.log("User already logged in as " + username);
+					$.mobile.changePage("#home");
+					server.sync();
+				}
+				else {
+					if ($("#login .username").val().length == 0) {
+						$("#login .username").val(localStorage.getItem(appName + "-username"));
+						$("#login .password").val(localStorage.getItem(appName + "-password"));
+					}
+				}
 			}
 		});
 	}, 100);
-}
-function init() {
-	server.init();
-	onLoginPageShow();
-	bindUI();
-  
-	
-	$('#time').mobiscroll().date({
-		theme: 'android-ics light',
-		display: 'inline',
-		mode: 'scroller',
-		dateOrder: 'mmD ddyy',
-		rows: 3
-	});
 }
 /*
 function scrollTo(target) {
@@ -201,7 +234,7 @@ function loadItems(tx, rs) {
 			if (i > 0) {
 				chartData.push([Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()), dayProduction]);
 			}
-			rowOutput += ["<tr><td>", [weekday[date.getDay()] + (date.getMonth() + 1) + "/" + date.getDate() , dayProduction + " kWh", row.total + " kWh", '<button href="#" data-id="' + row.ID + '"data-role="button" data-icon="delete" data-iconpos="notext">Delete</button>'].join("</td><td>"), "</td></tr>"].join("");
+			rowOutput = ["<tr><td>", [weekday[date.getDay()] + (date.getMonth() + 1) + "/" + date.getDate() , dayProduction + " kWh", row.total + " kWh", '<button href="#" data-id="' + row.servRecId + '"data-role="button" data-mini="true" data-theme="f">Delete</button>'].join("</td><td>"), "</td></tr>"].join("") + rowOutput;
 			
 			previousDate = date;
 			previousTotal = row.total;

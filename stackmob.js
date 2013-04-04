@@ -1,14 +1,17 @@
-var server = (function(){
-	"use strict"
-	var _lastModTime = 0,
-	_syncProgress = 0,
+var Server = function(appName){
+	"use strict"	
+	
+	var _syncProgress = 0,
+	_appName = appName,
 	_syncDoneEventTriggered = false,
+	_this = null,
+	_syncing = false,
 	Record = null;
-	function _init() {
+	function _init(isProduction) {
 		StackMob.init({
 			    appName: "sun_catcher",
-			    publicKey: "badd3a47-de8e-4146-bbe9-dda56cf1ef3c",
-			    apiVersion: 0
+			    publicKey: isProduction ? "90755f35-d410-4a30-9fe7-03069ef62d0e" : "badd3a47-de8e-4146-bbe9-dda56cf1ef3c",
+			    apiVersion: isProduction ? 1 : 0
 			});
 		Record = StackMob.Model.extend({
 			schemaName : "record"
@@ -73,9 +76,7 @@ var server = (function(){
 		});
 	}
 	function _syncRecord(record, iter, list) {
-		if (_lastModTime < record.get("lastmoddate")) {
-			_lastModTime = record.get("lastmoddate");
-		}
+		webdb.setModTime(record.get("lastmoddate"));
 		webdb.findEntry(record.get("record_id"), {
 			success: function(ts, rs) {
 				// If the item is marked as deleted on the server, we should delete it, or ignore if it doesn't exist locally
@@ -100,7 +101,8 @@ var server = (function(){
 				}
 				_syncProgress--;
 				if (_syncProgress == 0) {
-					server.trigger("syncDone");
+					_syncing = false;
+					_this.trigger("syncDone");
 					_syncDoneEventTriggered = true;
 				}
 			},
@@ -108,34 +110,41 @@ var server = (function(){
 				console.log("Entry not found.  Add to local db: " + record.toJSON());
 				_syncProgress--;
 				if (_syncProgress == 0) {
-					server.trigger("syncDone");
+					_syncing = false;
+					_this.trigger("syncDone");
 					_syncDoneEventTriggered = true;
 				}
 			}
 		});
 	}
 	function _sync() {
-		server.trigger("syncStart");
-		var Records = StackMob.Collection.extend({ model: Record });
-		var records = new Records();
-		var q = new StackMob.Collection.Query();
-		q.gt('lastmoddate', _lastModTime);
-		records.query(q, {
-			success: function(collection) {
-				_syncProgress = collection.length;
-				_syncDoneEventTriggered = false;
-				collection.forEach(_syncRecord);
-				// In case syncDone not fired properly
-				setTimeout(function() {
-					if (!_syncDoneEventTriggered) {
-						server.trigger("syncDone");
-					}
-				}, 5000);
-		    },
-		    error: function(model, response) {
-			   console.debug(response);
-		    }
-		});
+		if (!_syncing) {
+			_syncing = true;
+			_this.trigger("syncStart");
+			var Records = StackMob.Collection.extend({ model: Record });
+			var records = new Records();
+			var q = new StackMob.Collection.Query();
+			q.gt('lastmoddate', webdb.getModTime());
+			records.query(q, {
+				success: function(collection) {
+					var timeout = collection.length * 500;
+					_syncProgress = collection.length;
+					console.log("Sync: # of changes: " + _syncProgress);
+					_syncDoneEventTriggered = false;
+					collection.forEach(_syncRecord);
+					// In case syncDone not fired properly
+					setTimeout(function() {
+						if (!_syncDoneEventTriggered) {
+							_this.trigger("syncDone");
+							_syncing = false;
+						}
+					}, timeout);
+			    },
+			    error: function(model, response) {
+				   console.debug(response);
+			    }
+			});
+		}
 	}
 	function _deleteAll() {
 		var Records = StackMob.Collection.extend({ model: Record });
@@ -168,7 +177,9 @@ var server = (function(){
 				});
 	}
 	
-	return {
+	
+	
+	_this = {
 		init: _init,
 		add: _add,
 		destroy: _destroy,
@@ -177,5 +188,6 @@ var server = (function(){
 		printDB: _printDB,
 		sync: _sync
 	};
-})();
-_.extend(server, Backbone.Events);
+	_.extend(_this, Backbone.Events);
+	return _this;
+};

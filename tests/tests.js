@@ -1,6 +1,7 @@
-server.init();
+var server = new Server("SunCatcher-Test");
+server.init(false);
 var defCB={success: function() {}, error: function() {}};
-var webdb = WebDB("Record", "Sun Catcher", "record", defCB);
+var webdb = WebDB("Record", "SunCatcherTest", "record", defCB);
 var Record = StackMob.Model.extend({
 			schemaName : "record"
 		});

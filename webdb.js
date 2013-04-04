@@ -4,7 +4,11 @@ var WebDB = function (tableName, appName, callbacks) {
 	var db = null,
 	_tableName = tableName,
 	_appName = appName,
+	_lastModTime = parseInt(localStorage.getItem(_appName+"-lastModTime")),
 	_callBacks = callbacks;
+	if (isNaN(_lastModTime)) {
+		_lastModTime = 0;
+	}
 	
 	function open() {
 	  var dbSize = 5 * 1024 * 1024; // 5MB
@@ -37,12 +41,13 @@ var WebDB = function (tableName, appName, callbacks) {
 	
 	function getAllItems(renderFunc) {
 		db.transaction(function(tx) {
-			tx.executeSql("SELECT * FROM " + _tableName + " order by date asc", [], renderFunc,
+			tx.executeSql("SELECT * FROM " + _tableName + " ORDER BY date asc", [], renderFunc,
 			    _callBacks.error);
 		});
 	}
 	
 	function deleteAllEntries() {
+		setModTime(0);	// clear the last mod time
 		db.transaction(function(tx){
 			tx.executeSql("DELETE FROM " + _tableName, [],
 				_callBacks.success,
@@ -89,6 +94,12 @@ var WebDB = function (tableName, appName, callbacks) {
 	function cleanup() {
 		
 	}
+	function setModTime(time) {
+		if (_lastModTime < time || time==0) {
+			_lastModTime = time;
+			localStorage.setItem(_appName + "-lastModTime", _lastModTime);
+		}
+	}
 	return {
 			deleteAllEntries: deleteAllEntries,
 			deleteEntry: deleteEntry,
@@ -98,6 +109,8 @@ var WebDB = function (tableName, appName, callbacks) {
 			printDB: printDB,
 			cleanup: cleanup,
 			setCallbacks: function(callbacks) { _callBacks = callbacks; },
-			findEntry: findEntry
+			findEntry: findEntry,
+			getModTime: function() { return _lastModTime; },
+			setModTime: setModTime
 	};
 };
