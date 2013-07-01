@@ -11,10 +11,14 @@
 	<script type="text/javascript" src="lib/underscore-min.js"></script>
 	<script type="text/javascript" src="lib/backbone-min.js"></script>
 	<script type="text/javascript" src="lib/stackmob.0.9.js"></script>
+	<script type="text/javascript" src="lib/dust-core-1.1.1.js"></script>
 	<link href="lib/mobiscroll-datetime/css/mobiscroll.custom-2.4.4.min.css" rel="stylesheet" type="text/css" />
 	<script src="lib/mobiscroll-datetime/js/mobiscroll.custom-2.4.4.min.js" type="text/javascript"></script>
 	<script src="http://code.highcharts.com/highcharts.js"></script>
+	<script type="text/javascript" src="templates/dust/templates.js"></script>
+	<script src="dustWrapper.js"></script>
 	<script src="webdb.js"></script>
+	<script src="extrapolate.js"></script>
 	<script src="stackmob.js"></script>
 	<script src="webdbOld.js"></script>
 	<script src="suncatcher.js"></script>
@@ -45,96 +49,9 @@
 			</div>
 		</div><!-- /content -->
 	</div><!-- /page -->
-	<div data-role="page" id="home" class="ui-responsive-panel">
-		<div data-role="header">
-			<h1>Summary</h1>
-		</div><!-- /header -->
 	
-		<div data-role="content" class="ui-icon-nodisc">
-			<div id="chart" style="min-width: 300px; height: 300px; margin: 0 auto"></div>
-		</div><!-- /content -->
-	
-		<div data-role="footer" data-tap-toggle="false" data-tap-toggle="false" data-fullscreen="false" data-position="fixed">
-			<div data-role="navbar" data-iconpos="top">
-				<ul class="nav-search ui-icon-nodisc">
-				   <li><a href="#" data-iconshadow="false" data-icon="home" class="ui-btn-active ui-state-persist" data-transition="slidefade">Home</a></li>
-				   <li><a href="#viewRecords" data-iconshadow="false" data-icon="grid" data-transition="slidefade">Records</a></li>
-				   <li><a href="#add" data-iconshadow="false" data-icon="add" data-rel="dialog" data-transition="slidefade">Add</a></li>
-				   <li><a href="#menu-panel" data-iconshadow="false" data-icon="bars">More</a></li>
-				</ul>
-			</div><!-- /navbar -->
-		</div><!-- /footer -->
-		<div data-role="panel" id="menu-panel" data-theme="a" data-position="right" data-display="overlay">
-			<ul data-role="listview" data-theme="a">
-				<li data-icon="delete"><a href="#" data-rel="close">Close menu</a></li>
-				<li><a href="#" class="logout">Sign out</a></li>
-				<li><a href="#" class="clear">Reset</a></li>
-				<li><a href="#" class="backup">Backup Your Data</a></li>
-				<li><a href="#" class="import">Import Hung's Data</a></li>
-				<li><a href="#menu" class="export">Export Local Data</a></li>
-				<li><a href="#menu" class="sync">Sync</a></li>
-			</ul>
-		</div><!-- /panel -->
-	</div><!-- /page -->
-	<div data-role="page" id="add">
-		<div data-role="header">
-			<h2>Add A New Record</h2>
-		   </div>
-		<div data-role="popup" id="popupInfo" class="ui-content" data-theme="e" style="max-width:350px;">
-			<a href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
-			<p>Look at your solar inverter unit and read the total kWh production and enter the value in this field</p>
-		</div>
-	
-		<div data-role="content">
-			<label for="value">Enter current total kWh <a href="#popupInfo" data-rel="popup" data-role="button" class="ui-icon-alt" data-inline="true" data-transition="pop" data-icon="info" data-theme="e" data-iconpos="notext">Learn more</a></label>
-			<input type="number" name="value" pattern="[0-9]*" id="value" value="" placeholder="Enter a value">
-			<div name="time" id="time" class="i-txt"></div>
-			<button id="save" data-theme="b">Save</button>
-		</div><!-- /content -->
-	</div><!-- /page -->
-	<div data-role="page" id="viewRecords">
-		<div data-role="header">
-			<h1>Records</h1>
-		</div><!-- /header -->
-	
-		<div data-role="content" class="ui-icon-nodisc">
-			<table id="history" data-role="table" id="table-custom-2" data-mode="columntoggle" class="ui-body-d ui-shadow table-stripe ui-responsive" data-column-btn-theme="b" data-column-popup-theme="a">
-				<thead>
-				  <tr class="ui-bar-d">
-				    <th>Date</th>
-				    <th>Day</th>
-				    <th>Total</th>
-				    <th></th>
-				  </tr>
-				</thead>
-				<tbody>
-				</tbody>
-			</table>
-		</div><!-- /content -->
-	
-		<div data-role="footer" data-tap-toggle="false" data-fullscreen="false" data-position="fixed">
-			<div data-role="navbar" data-iconpos="top">
-				<ul class="ui-icon-nodisc">
-				   <li><a href="#home" data-iconshadow="false" data-icon="home" data-transition="slidefade">Home</a></li>
-				   <li><a href="#" data-iconshadow="false" data-icon="grid" class="ui-btn-active ui-state-persist" data-transition="slidefade">Records</a></li>
-				   <li><a href="#add" data-iconshadow="false" data-icon="add" data-rel="dialog" data-transition="slidefade">Add</a></li>
-				   <li><a href="#menu-panel" data-iconshadow="false" data-icon="bars">More</a></li>
-				</ul>
-			</div><!-- /navbar -->
-		</div><!-- /footer -->
-		
-		<div data-role="panel" id="menu-panel" data-theme="a" data-position="right" data-display="overlay">
-			<ul data-role="listview" data-theme="a" class="nav-search">
-				<li data-icon="delete"><a href="#" data-rel="close">Close menu</a></li>
-				<li><a href="#" class="logout">Sign out</a></li>
-				<li><a href="#menu" class="clear">Reset</a></li>
-				<li><a href="#menu" class="backup">Backup Your Data</a></li>
-				<li><a href="#menu" class="import">Import Hung's Data</a></li>
-				<li><a href="#menu" class="export">Export Local Data</a></li>
-				<li><a href="#menu" class="sync">Sync</a></li>
-			</ul>
-		</div><!-- /panel -->
-	</div><!-- /page -->
-	
+	<div data-role="page" id="home" class="ui-responsive-panel"></div>
+	<div data-role="page" id="viewRecords"></div>
+	<div data-role="page" id="add"></div>
 </body>
 </html>

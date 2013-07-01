@@ -1,0 +1,14 @@
+<div data-role="header">
+	<h2>Add A New Record</h2>
+   </div>
+<div data-role="popup" id="popupInfo" class="ui-content" data-theme="e" style="max-width:350px;">
+	<a href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="ui-btn-right">Close</a>
+	<p>Look at your solar inverter unit and read the total kWh production and enter the value in this field</p>
+</div>
+
+<div data-role="content">
+	<label for="value">Enter current total kWh <a href="#popupInfo" data-rel="popup" data-role="button" class="ui-icon-alt" data-inline="true" data-transition="pop" data-icon="info" data-theme="e" data-iconpos="notext">Learn more</a></label>
+	<input type="number" name="value" pattern="[0-9]*" id="value" value="" placeholder="Enter a value">
+	<div name="time" id="time" class="i-txt"></div>
+	<button id="save" data-theme="b">Save</button>
+</div><!-- /content -->

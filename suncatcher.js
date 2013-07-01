@@ -5,7 +5,7 @@ var webdbold = WebDBOld("Sun Catcher");
 var inited = false;
 var _lastRecordDate = "";
 
-$( document ).bind( "mobileinit", function() {
+$(document).bind( "mobileinit", function() {
     // Make your jQuery Mobile framework configuration changes here!
     $.support.cors = true;
     $.mobile.allowCrossDomainPages = true;
@@ -25,14 +25,39 @@ function onSuccess(tx, r) {
 function onError(tx, err) {
 	alert(err.message);
 }
+function onClick(cssSelector, cbFunc) {
+	$("body").on("click", cssSelector, cbFunc);
+}
+function delegateClick(cssSelector, cbFunc) {
+	$("body").delegate(cssSelector, "click", cbFunc);
+}
+function onSignup(e) {
+	var elLogin = $("#login")[0];
+	if (elLogin.dataset.view == "login") {
+		elLogin.dataset.view =  "signup";
+	}
+	else {
+		var username = $("#login .username").val().toLowerCase(),
+		password = $("#login .password").val(),
+		user = new StackMob.User({ username: username,
+							    password: password,
+							    firstname: $("#login .firstname").val(),
+							    lastname: $("#login .lastname").val() });
+		user.create({
+			success: function(model) {
+			    _login();
+			},
+			error: function(model, response) {
+			    alert("Can't create account " + response);
+			}
+		 });
+
+	}
+}
 function bindUI() {
-	$('#time').mobiscroll().date({
-		theme: 'android-ics light',
-		display: 'inline',
-		mode: 'scroller',
-		dateOrder: 'mmD ddyy',
-		rows: 3
-	});
+	Template.renderInto("viewRecords", {}, $("#viewRecords"));
+	Template.renderInto("add", {}, $("#add"));
+	
 	$("body").delegate(".logout", "click", function(e){
 		logout();
 		var panel = $(e.currentTarget).closest("#menu-panel");
@@ -40,33 +65,10 @@ function bindUI() {
 			panel.panel( "close" );
 	});
 	
-	$("#login .loginBtn").click(_login);
-	$("#login .signupBtn").click(function(e) {
-		var elLogin = $("#login")[0];
-		if (elLogin.dataset.view == "login") {
-			elLogin.dataset.view =  "signup";
-		}
-		else {
-			var username = $("#login .username").val().toLowerCase(),
-			password = $("#login .password").val(),
-			user = new StackMob.User({ username: username,
-								    password: password,
-								    email: username,
-								    firstname: $("#login .firstname").val(),
-								    lastname: $("#login .lastname").val() });
-			user.create({
-				success: function(model) {
-				    _login();
-				},
-				error: function(model, response) {
-				    alert("Can't create account " + response);
-				}
-			 });
-
-		}
-	});
+	onClick("#login .loginBtn", _login);
+	onClick("#login .signupBtn", onSignup);
 	
-	$("body").on("click", "#save", function(){
+	onClick("#save", function(){
 		var val = parseInt($('#value').val());
 		if (val >= 0) {
 			server.add(val, $('#time').mobiscroll('getDate'));
@@ -94,9 +96,9 @@ function bindUI() {
 			panel.panel( "close" );
 		importData();
 	});
-	$("#history").on("click", "tr button", function(e){
+	$("#viewRecords").delegate(".deleteItem", "click", function(e){
 		var target = e.target;
-		if (target.dataset.id > 0 && confirm("Delete this entry?")) {
+		if (target.dataset.id.length > 0 && confirm("Delete this entry?")) {
 			server.destroy(target.dataset.id);
 		}
 	});
@@ -112,13 +114,20 @@ function bindUI() {
 		}
 	});
 	$("body").delegate(".sync", "click", function(e){
-		syncWithServer();
+		server.sync(true);
 	});
 	server.on("syncStart", function() {
 		console.log("Sync starts");
 	});
 	server.on("syncDone", function() {
 		console.log("Sync done");
+	});
+	$('#time').mobiscroll().date({
+		theme: 'android-ics light',
+		display: 'inline',
+		mode: 'scroller',
+		dateOrder: 'mmD ddyy',
+		rows: 3
 	});
 }
 function exportItems(ts, rs) {
@@ -154,7 +163,7 @@ function _login() {
 		var user = new StackMob.User({ username: username, password: password });
 		user.login(true, {
 			success: function(user) {
-				$.mobile.changePage("#home");
+				_gotoHome();
 				server.sync();
 				// Cache user info
 				localStorage.setItem(appName + "-username", username);
@@ -170,7 +179,14 @@ function _login() {
 		elLogin.dataset.view = "login";
 	}
 }
-
+var loadedHome = false;
+function _gotoHome() {
+	if (!loadedHome) {
+		loadedHome = true;
+		Template.renderInto("home", {}, $("#home"));
+	}
+	$.mobile.changePage("#home");
+}
 function onLoginPageShow() {
 	var $this = $( this ),
 	    theme = $this.jqmData("theme") || $.mobile.loader.prototype.options.theme,
@@ -188,7 +204,7 @@ function onLoginPageShow() {
 				$.mobile.loading('hide');
 				if (username) {
 					console.log("User already logged in as " + username);
-					$.mobile.changePage("#home");
+					_gotoHome();
 					server.sync();
 				}
 				else {
@@ -217,8 +233,13 @@ function loadItems(tx, rs) {
 	history = $("#history tbody"),
 	previousTotal = 0,
 	previousDate = 0,
-	diff = 1;
-	chartData = [];
+	kWhRateSummer = (0.3 + 0.17)/2,
+	kWhRateWinter = 0.17,
+	diff = 1,
+	totalSavings = 0,
+	context = { entries: []},
+	chartData = [],
+	firstDate=null, today=new Date();
 	var weekday = ["Sun ", "Mon ", "Tue ", "Wed ", "Thu ", "Fri ", "Sat "];
 	// skip the first value as it has no basis for comparison
 	for (var i=0; i < rs.rows.length; i++) {
@@ -227,6 +248,9 @@ function loadItems(tx, rs) {
 		if (_lastRecordDate < row.date) {
 			_lastRecordDate = row.date;
 		}
+		if (firstDate == null  || firstDate > date) {
+			firstDate = date;
+		}
 		
 		diff = Math.round((date - previousDate)/ 1000 / 60 / 60/24);
 		if (diff > 0) {
@@ -234,22 +258,48 @@ function loadItems(tx, rs) {
 			if (i > 0) {
 				chartData.push([Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()), dayProduction]);
 			}
-			rowOutput = ["<tr><td>", [weekday[date.getDay()] + (date.getMonth() + 1) + "/" + date.getDate() , dayProduction + " kWh", row.total + " kWh", '<button href="#" data-id="' + row.servRecId + '"data-role="button" data-mini="true" data-theme="f">Delete</button>'].join("</td><td>"), "</td></tr>"].join("") + rowOutput;
+			var rate = (date.getMonth() > 3 && date.getMonth() < 10) ? kWhRateSummer : kWhRateWinter,
+			savings = dayProduction * rate;
+			if (savings > 10)
+				savings = Math.round(dayProduction * rate);
+			else
+				savings = savings.toFixed(2);
+			context.entries.push({day: weekday[date.getDay()],
+							date: [date.getMonth() + 1, "/", date.getDate()].join(""),
+							dayProduction: dayProduction,
+							total: row.total,
+							savings: savings,
+							recId: row.servRecId
+							});
 			
 			previousDate = date;
 			previousTotal = row.total;
 		}
 	}
-	if (rs.rows.length > 0) {
-		var value = [], total = rs.rows.item(rs.rows.length-1).total;
-		
-		for (var i=0; i < 4; i++) {
-			value[3-i] = total % 10;
-			total = (total - (total % 10)) / 10;
-		}
-		$('#value').mobiscroll("setValue", value);
+	
+	var allRows = [];
+	// First figure out all the months we need to compute
+	for (var i=0; i < rs.rows.length; i++) {
+		row = rs.rows.item(i);
+		date = new Date(row.date);
+		//console.log(["Add item: " + date.toDateString() + " value " + row.total].join(""));
+		allRows.push({date: date, item: row});
 	}
 	
+	var curDate = firstDate,
+	previousTotal = 0;
+	while(curDate < today) {
+		dayProduction = getDateValue(curDate, allRows);
+		var rate = (curDate.getMonth() > 3 && curDate.getMonth() < 10) ? kWhRateSummer : kWhRateWinter,
+			savings = (dayProduction - previousTotal) * rate;
+		totalSavings += savings;
+		curDate = new Date(curDate.getTime() + (24 * 60 * 60 * 1000));
+		previousTotal = dayProduction;
+	}		
+			
+	context.entries.push({day: "Total", date: "", dayProduction: "", total: previousTotal, savings: Math.round(totalSavings)}),
+	context.entries.reverse();
+	Template.renderInto("recordItems", context, $("#viewRecords .history tbody"));
 	if (history)
 		history.html(rowOutput);
 	drawChart(chartData);

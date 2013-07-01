@@ -5,6 +5,7 @@ var webdb = WebDB("Record", "SunCatcherTest", "record", defCB);
 var Record = StackMob.Model.extend({
 			schemaName : "record"
 		});
+
 asyncTest( "login account", function() {
 	console.log("running 1");
 	var user = new StackMob.User({ username: "test", password: "hungtest" });
@@ -92,6 +93,35 @@ asyncTest("Sync records", function() {
 					}, 2000);
 				}, 2000);
 				
+			}, 2000);
+		}, 3000);
+	}, 2000);
+});
+
+
+asyncTest("Full sync records", function() {
+	console.log("running 3");
+	server.add(10, "2012-01-01");			// add locally and server
+	server.add(20, "2012-01-02", true);	// server only
+	server.add(30, "2012-01-03", true);	// server only
+	webdb.addEntry("bad", "2012-01-02", "badid");
+	webdb.addEntry("bad", "2012-01-02", "badid");
+	webdb.addEntry("bad", "2012-01-02", "badid");
+	setTimeout(function() {
+		verifyServerCount(3, "init server add");
+		verifyLocalCount(4, "4 local entry");
+		
+		server.sync(true);
+		setTimeout(function() {
+			verifyLocalCount(3, "first sync");
+			verifyLocalCount(3, "local still has 3");
+			server.printDB();
+			webdb.printDB();
+			setTimeout(function() {
+				server.deleteAll();
+				setTimeout(function() {
+					start();
+				}, 1000);
 			}, 2000);
 		}, 3000);
 	}, 2000);

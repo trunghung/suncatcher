@@ -46,12 +46,15 @@ var WebDB = function (tableName, appName, callbacks) {
 		});
 	}
 	
-	function deleteAllEntries() {
+	function deleteAllEntries(callbacks) {
+		if (!callbacks) {
+			callbacks = _callBacks;
+		}
 		setModTime(0);	// clear the last mod time
 		db.transaction(function(tx){
 			tx.executeSql("DELETE FROM " + _tableName, [],
-				_callBacks.success,
-				_callBacks.error);
+				callbacks.success,
+				callbacks.error);
 			});
 	}
 	
