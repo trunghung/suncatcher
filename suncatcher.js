@@ -198,7 +198,12 @@ function onLoginPageShow() {
 		   textonly: false,
 		   html: null
 	});
+	
 	setTimeout(function(){
+		if ($("#login .username").val().length == 0) {
+			$("#login .username").val(localStorage.getItem(appName + "-username"));
+			$("#login .password").val(localStorage.getItem(appName + "-password"));
+		}
 		StackMob.getLoggedInUser({
 			success: function(username){
 				$.mobile.loading('hide');
@@ -206,12 +211,6 @@ function onLoginPageShow() {
 					console.log("User already logged in as " + username);
 					_gotoHome();
 					server.sync();
-				}
-				else {
-					if ($("#login .username").val().length == 0) {
-						$("#login .username").val(localStorage.getItem(appName + "-username"));
-						$("#login .password").val(localStorage.getItem(appName + "-password"));
-					}
 				}
 			}
 		});
@@ -277,23 +276,33 @@ function loadItems(tx, rs) {
 		}
 	}
 	
-	var allRows = [];
+	var allRows = [],
+	lastItemDate = null;
 	// First figure out all the months we need to compute
 	for (var i=0; i < rs.rows.length; i++) {
 		row = rs.rows.item(i);
-		date = new Date(row.date);
+		lastItemDate = date = new Date(row.date);
 		//console.log(["Add item: " + date.toDateString() + " value " + row.total].join(""));
 		allRows.push({date: date, item: row});
 	}
 	
 	var curDate = firstDate,
 	previousTotal = 0;
+	msInADay = (24 * 60 * 60 * 1000),
+	currentDailyProduction = 0;
 	while(curDate < today) {
-		dayProduction = getDateValue(curDate, allRows);
-		var rate = (curDate.getMonth() > 3 && curDate.getMonth() < 10) ? kWhRateSummer : kWhRateWinter,
-			savings = (dayProduction - previousTotal) * rate;
+		var savings=0, rate = (curDate.getMonth() > 3 && curDate.getMonth() < 10) ? kWhRateSummer : kWhRateWinter;
+		if (lastItemDate == null || curDate.getTime() < lastItemDate.getTime() + msInADay) {
+			dayProduction = getDateValue(curDate, allRows);
+			currentDailyProduction = (dayProduction - previousTotal);
+			savings = currentDailyProduction * rate;
+		}
+		// Do a projection of what this saving would be for days pass the last entry using the same daily saving
+		else if (currentDailyProduction > 0) {
+			savings = currentDailyProduction * rate;
+		}
 		totalSavings += savings;
-		curDate = new Date(curDate.getTime() + (24 * 60 * 60 * 1000));
+		curDate = new Date(curDate.getTime() + msInADay);
 		previousTotal = dayProduction;
 	}		
 			

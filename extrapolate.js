@@ -1,5 +1,8 @@
 
 function getDateValue(date, allRows) {
+	if (allRows.length == 0)
+		return 0;
+	
 	var retVal = 0, prev=null, post=null, last=null, i=0;
 	for (i=0; i < allRows.length; i++) {
 		// if the day match, just use it
